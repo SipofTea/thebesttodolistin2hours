@@ -1,0 +1,18 @@
+model Todo {
+  fields {
+    label Text
+    isDone Boolean? @default(false)
+  }
+
+  actions {
+    list listTodos()
+    create createTodo() with (label)
+    update updateTodo(id) with (isDone)
+    delete deleteTodo(id)
+  }
+
+  @permission (
+    actions: [list, create, update, delete],
+    expression: true
+  )
+}
