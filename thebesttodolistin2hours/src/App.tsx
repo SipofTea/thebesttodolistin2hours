@@ -1,33 +1,89 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+type ToDoItem = {
+createdAt: Date
+id: string
+isDone: boolean
+label: string
+updatedAt: Date
+}
+
+const App = () => {
+  const [toDoList, setToDoList] =  useState([]);
+  const [newToDo, setNewToDo] = useState('');
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    fetchToDoList();
+  }, []);
+  
+  const fetchToDoList = async () => {
+    try {
+      const response = await fetch('https://staging-workshop-cityjs-london-2024-auJTOQ.keelapps.xyz/api/json/listTodos', {method: "POST", body: JSON.stringify({first:100000000000000})});
+      const data = await response.json();
+      setToDoList(data.results);
+    } catch (error) {
+      console.error('Error fetching To Do list:', error);
+    }
+  };
+
+  const updateDoneState = async (id: string) => {
+    try {
+      const response = await fetch(`https://staging-workshop-cityjs-london-2024-auJTOQ.keelapps.xyz/api/json/updateTodo/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          isDone: true,
+        }),
+      });
+      await response.json();
+      fetchToDoList();
+    } catch (error) {
+      console.error('Error updating todo:', error);
+    }
+  }
+
+  const submitNewToDo = async (label: string) => {
+    try {
+      const response = await fetch('https://staging-workshop-cityjs-london-2024-auJTOQ.keelapps.xyz/api/json/createTodo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          label,
+        }),
+      });
+      await response.json();
+      fetchToDoList();
+    } catch (error) {
+      console.error('Error creating todo:', error);
+    } finally {
+      setNewToDo('');
+    }
+  }
 
   return (
     <>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <h1>TODO</h1>
+      <form onSubmit={(event) => {event.preventDefault(); submitNewToDo(newToDo)}}>
+      <input type="text" placeholder="Add a new todo" value={newToDo} onChange={(event) => {setNewToDo(event?.target.value)}} />
+      <button >SUBMIT</button>
+      </form>
+      <input type="text" placeholder="Filter To Do items" value={filter} onChange={(event) => {setFilter(event?.target.value)}} />
+      <ul style={{listStyle: "none"}}>
+        {toDoList?.filter((toDo: ToDoItem) => toDo.label.includes(filter)).map((toDoItem: ToDoItem) => (
+          <li key={toDoItem.id}>
+          <input type="checkbox" checked={toDoItem.isDone} onClick={() => {updateDoneState(toDoItem.id)}}/>
+            {toDoItem.label}
+          </li>
+        ))}
+      </ul>
     </>
   )
 }
